@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Departures</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .train-info { margin-bottom: 20px; padding: 10px; border: 1px solid #000; }
+        .delay-info { color: red; font-weight: bold; }
+        #main-message { font-size: 18px; font-weight: bold; color: blue; margin-bottom: 5px; border: 1px solid #000; padding: 10px; }
+        #update-time { font-size: 14px; color: gray; margin-bottom: 20px; }
+        #nrcc-message { font-size: 16px; font-weight: bold; color: darkred; margin-top: 20px; border: 1px solid #000; padding: 10px; }
+        #nrcc-timer { font-size: 14px; color: gray; }
+    </style>
+</head>
+<body>
+    <h1>Live Train TTS Announcements</h1>
+
+    <label for="stationCode">Enter Station Code:</label>
+    <input type="text" id="stationCode" value="CAR" maxlength="3" style="text-transform: uppercase;">
+    <button onclick="fetchTrainData()">Update</button>
+
+    <br><br>
+
+    <label>
+        <input type="checkbox" id="playChime" checked> Play Chime?
+    </label>
+
+    <br><br>
+
+    <div id="main-message">No services ready to show</div>
+    <div id="update-time"></div>
+    <div id="nrcc-message">No disruption messages</div>
+    <div id="nrcc-timer">Next NRCC announcement in: 3:00</div>
+
+    <audio id="chime-audio">
+        <source src="https://github.com/MichaelH12345/tts-trains/raw/main/Chime.WAV" type="audio/wav">
+    </audio>
+
+    <script>
+        let lastAnnouncedServices = {};
+        let announcementQueue = [];
+        let isSpeaking = false;
+        let lastNrccMessage = "";
+
+        function getStationCode() {
+            return document.getElementById("stationCode").value.toUpperCase();
+        }
+
+        function queueAnnouncement(message) {
+            announcementQueue.push(message);
+            processQueue();
+        }
+
+        function processQueue() {
+            if (isSpeaking || announcementQueue.length === 0) return;
+
+            isSpeaking = true;
+            const message = announcementQueue.shift();
+            document.getElementById("main-message").textContent = message; // Show message in the text box
+            
+            if (document.getElementById("playChime").checked) {
+                document.getElementById("chime-audio").volume = 1;
+                document.getElementById("chime-audio").play();
+                setTimeout(() => speakMessage(message, () => finishSpeaking()), 1500); // Delay to allow chime to play first
+            } else {
+                speakMessage(message, () => finishSpeaking());
+            }
+        }
+
+        function finishSpeaking() {
+            setTimeout(() => {
+                isSpeaking = false;
+                processQueue();
+            }, 5000); // 5-second delay before the next announcement
+        }
+
+function speakMessage(message, callback) {
+    setTimeout(() => {
+        const voices = speechSynthesis.getVoices();
+        const selectedVoice = voices.find(voice => voice.name.includes("Google UK English Male"));
+        const utterance = new SpeechSynthesisUtterance(message);
+        if (selectedVoice) utterance.voice = selectedVoice;
+        utterance.onend = callback;
+        speechSynthesis.speak(utterance);
+    }, 500);
+}
+
+
+        function updateNRCCMessages(nrccList) {
+            if (nrccList && nrccList.length > 0) {
+                const formattedMessage = nrccList.map(msg => msg.Value.replace(/\s*\u003ca href=.*?\u003e.*?\u003c\/a\u003e.*/, " the status and disruption section of our website, at national rail dot co dot you kay.")).join(" ");
+                document.getElementById("nrcc-message").textContent = formattedMessage;
+                lastNrccMessage = formattedMessage;
+            } else {
+                document.getElementById("nrcc-message").textContent = "No disruption messages";
+                lastNrccMessage = "No disruption messages.";
+            }
+        }
+
+function announceNrccMessage() {
+    if (lastNrccMessage && lastNrccMessage !== "No disruption messages.") {
+        const message = `Live Customer Information: ${lastNrccMessage}`;
+        document.getElementById("main-message").textContent = message;
+        speakMessage(message, () => {
+            document.getElementById("main-message").textContent = ""; // Clear message after announcement
+            resetNrccTimer();
+        });
+    } else {
+        resetNrccTimer();
+    }
+}
+
+
+function finishSpeaking() {
+    setTimeout(() => {
+        isSpeaking = false;
+        document.getElementById("main-message").textContent = ""; // Clear the message box after announcement
+        setTimeout(processQueue, 10000); // 5-second delay before the next announcement starts
+    }, 5000);
+}
+
+
+
+        function resetNrccTimer() {
+            let nrccSecondsLeft = 180;
+            function updateTimer() {
+                let minutes = Math.floor(nrccSecondsLeft / 60);
+                let seconds = nrccSecondsLeft % 60;
+                document.getElementById("nrcc-timer").textContent = `Next NRCC announcement in: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                if (nrccSecondsLeft > 0) {
+                    nrccSecondsLeft--;
+                    setTimeout(updateTimer, 1000);
+                } else {
+                    announceNrccMessage();
+                }
+            }
+            updateTimer();
+        }
+
+        function fetchTrainData() {
+            const stationCode = getStationCode();
+            const apiUrl = `https://api.codetabs.com/v1/proxy/?quest=https://www.trainboard.uk/api/${stationCode}`;
+            
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    let currentTime = new Date();
+
+                    if (data.data) {
+                        updateNRCCMessages(data.data.nrccMessages);
+
+                        if (data.data.trainServices) {
+                            data.data.trainServices.forEach(service => {
+                                const std = service.std || "Unknown Time";
+                                const etd = service.etd || "Unknown";
+                                const destination = service.destination[0]?.locationName || "Unknown Destination";
+                                const operator = service.operator || "Unknown Operator";
+                                const platform = service.platform || "Unknown";
+                                const length = service.length || "0";
+                                let cancelReason = service.cancelReason ? service.cancelReason.replace(/^This train has been cancelled because of /, "") : "";
+                                const callingPoints = service.subsequentCallingPoints[0]?.callingPoint.map(cp => cp.locationName) || [];
+const callingPointsText = callingPoints.length === 1 
+    ? `${callingPoints[0]} only.`
+    : callingPoints.length > 1 
+        ? callingPoints.slice(0, -1).join(", ") + " , and " + callingPoints.slice(-1) 
+        : "";
+
+                                const stdTime = new Date();
+                                const [stdHours, stdMinutes] = std.split(":").map(Number);
+                                stdTime.setHours(stdHours, stdMinutes, 0, 0);
+
+                                let etdTime = null;
+                                if (etd !== "On time" && etd !== "Cancelled" && etd !== std) {
+                                    etdTime = new Date();
+                                    const [etdHours, etdMinutes] = etd.split(":").map(Number);
+                                    etdTime.setHours(etdHours, etdMinutes, 0, 0);
+                                }
+
+                                const diffStdMinutes = (stdTime - currentTime) / 60000;
+                                const diffEtdMinutes = etdTime ? (etdTime - currentTime) / 60000 : NaN;
+                                const serviceKey = `${std}-${destination}`;
+
+                                if (etd === "Cancelled") {
+                                    if (diffStdMinutes <= 3 || lastAnnouncedServices[serviceKey] !== "Cancelled") {
+                                        const message = `Your attention please! The ${std}, ${operator} service, to ${destination}, has been cancelled. ` +
+                                            (cancelReason ? `This is due to ${cancelReason}. ` : "") + 
+                                            `${operator} apologises for the disruption to your journey today.`;
+                                        lastAnnouncedServices[serviceKey] = "Cancelled";
+                                        queueAnnouncement(message);
+                                    }
+                                    return;
+                                }
+
+                                if ((diffStdMinutes <= 3 || (!isNaN(diffEtdMinutes) && diffEtdMinutes <= 3)) && lastAnnouncedServices[serviceKey] !== etd) {
+                                    const message = `The next train to arrive at platform ${platform}, will be the ${etd !== "On time" ? "delayed " : ""}${std}, ${operator} service, to ${destination}. Calling at ${callingPointsText}.`;
+                                    lastAnnouncedServices[serviceKey] = etd;
+                                    queueAnnouncement(message);
+                                }
+                            });
+                        }
+                    }
+                });
+        }
+
+        setInterval(fetchTrainData, 10000);
+        resetNrccTimer();
+    </script>
+</body>
+</html>
