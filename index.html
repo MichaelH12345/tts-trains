@@ -76,16 +76,14 @@
             }, 5000); // 5-second delay before the next announcement
         }
 
-function speakMessage(message, callback) {
-    setTimeout(() => {
-        const voices = speechSynthesis.getVoices();
-        const selectedVoice = voices.find(voice => voice.name.includes("Google UK English Male"));
-        const utterance = new SpeechSynthesisUtterance(message);
-        if (selectedVoice) utterance.voice = selectedVoice;
-        utterance.onend = callback;
-        speechSynthesis.speak(utterance);
-    }, 500);
-}
+        function speakMessage(message, callback) {
+            const utterance = new SpeechSynthesisUtterance(message);
+            utterance.voice = speechSynthesis.getVoices().find(voice => voice.name.includes("Google UK English Female"));
+            utterance.onend = callback;
+            speechSynthesis.speak(utterance);
+        }
+
+
 
 
         function updateNRCCMessages(nrccList) {
@@ -94,7 +92,7 @@ function speakMessage(message, callback) {
                 document.getElementById("nrcc-message").textContent = formattedMessage;
                 lastNrccMessage = formattedMessage;
             } else {
-                document.getElementById("nrcc-message").textContent = "No disruption messages";
+                document.getElementById("nrcc-message").textContent = "";
                 lastNrccMessage = "No disruption messages.";
             }
         }
