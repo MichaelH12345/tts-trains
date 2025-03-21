@@ -76,12 +76,12 @@
             }, 5000); // 5-second delay before the next announcement
         }
 
-        function speakMessage(message, callback) {
-            const utterance = new SpeechSynthesisUtterance(message);
-            utterance.voice = speechSynthesis.getVoices().find(voice => voice.name.includes("Google UK English Female"));
-            utterance.onend = callback;
-            speechSynthesis.speak(utterance);
-        }
+function speakMessage(message, callback) {
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.onend = callback;
+    speechSynthesis.speak(utterance);
+}
+
 
 
 
