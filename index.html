@@ -85,8 +85,10 @@
         }
         
 let lastAnnouncedNRCC = false;
-let nrccCountdown = 120; // 2 minutes
+let nrccCountdown = 30; // 2 minutes
 let nrccTimerInterval;
+let currentNRCCMessage = "";
+let nrccQueued = false;
 
 function updateNRCCCountdown() {
     let minutes = Math.floor(nrccCountdown / 60);
@@ -96,44 +98,75 @@ function updateNRCCCountdown() {
     if (nrccCountdown > 0) {
         nrccCountdown--;
     } else {
-        lastAnnouncedNRCC = false; // Allow new NRCC announcement
-        nrccCountdown = 120; // Reset timer
+        if (!isSpeaking) {
+            playNRCCMessage(); // Speak NRCC immediately if nothing is playing
+        } else {
+            nrccQueued = true; // Queue NRCC message to play next
+        }
     }
 }
 
 function startNRCCCountdown() {
-    if (nrccTimerInterval) clearInterval(nrccTimerInterval); // Reset if already running
-    nrccCountdown = 120; // Reset timer to 2 minutes
-    nrccTimerInterval = setInterval(updateNRCCCountdown, 1000); // Update every second
+    if (nrccTimerInterval) clearInterval(nrccTimerInterval);
+    nrccCountdown = 120;
+    nrccTimerInterval = setInterval(updateNRCCCountdown, 1000);
 }
 
 function processNRCCMessages(nrccMessages) {
     if (!nrccMessages || nrccMessages.length === 0) {
         document.getElementById("nrcc-message").textContent = "No disruption messages";
+        currentNRCCMessage = "";
         return;
     }
 
-    let cleanedMessages = nrccMessages.map(msg => {
-        return msg.Value.replace(/<a href=".*?">.*?<\/a>/g, "the status and disruptions page, at National Rail dot co dot UK.");
-    });
+    let cleanedMessages = nrccMessages.map(msg => 
+        msg.Value.replace(/<a href=".*?">.*?<\/a>/g, "the status and disruptions page, at National Rail dot co dot UK.")
+    );
 
-    let fullMessage = cleanedMessages.join(" ");
-    document.getElementById("nrcc-message").textContent = fullMessage;
+    currentNRCCMessage = cleanedMessages.join(" ");
+    document.getElementById("nrcc-message").textContent = currentNRCCMessage;
 
     if (!lastAnnouncedNRCC) {
-        queueAnnouncement(fullMessage);
+        playNRCCMessage(); // Play NRCC message immediately the first time
         lastAnnouncedNRCC = true;
-        startNRCCCountdown(); // Start the countdown after announcing
+        startNRCCCountdown();
     }
+}
+
+function playNRCCMessage() {
+    if (!currentNRCCMessage) return;
+
+    document.getElementById("main-message").textContent = currentNRCCMessage;
+    queueAnnouncement(currentNRCCMessage); // This ensures it is spoken
+    nrccQueued = false; // Reset NRCC queue flag
+    nrccCountdown = 120; // Reset countdown
+}
+
+
+function finishSpeaking() {
+    setTimeout(() => {
+        isSpeaking = false;
+        document.getElementById("main-message").textContent = "";
+
+        if (nrccQueued) {
+            playNRCCMessage(); // If an NRCC message was waiting, play it now
+        } else {
+            setTimeout(processQueue, 2500);
+        }
+    }, 2500);
 }
 
 function fetchTrainData() {
     const stationCode = getStationCode();
     const apiUrl = `https://api.codetabs.com/v1/proxy/?quest=https://www.trainboard.uk/api/${stationCode}`;
 
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
+
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    let currentTime = new Date();
+            // Handle NRCC messages
             if (data.data && data.data.nrccMessages) {
                 processNRCCMessages(data.data.nrccMessages);
             }
