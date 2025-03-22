@@ -153,13 +153,19 @@
                                 queueAnnouncement(message);
                             }
 
-                            if (diffStdMinutes <= 1 && etd !== "On time") {
-                                const delayMinutes = Math.round(diffEtdMinutes - diffStdMinutes);
-                                const delayMessage = delayReason
-                                    ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`
-                                    : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
-                                queueAnnouncement(delayMessage);
-                            }
+if (diffStdMinutes <= 1 && etd !== "On time") {
+    if (isNaN(diffEtdMinutes)) {
+        const delayMessage = delayReason
+            ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed. This is due to ${delayReason}. Please listen for further announcements.`
+            : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed. Please listen for further announcements.`;
+        queueAnnouncement(delayMessage);
+    } else {
+        const delayMinutes = Math.round(diffEtdMinutes - diffStdMinutes);
+        const delayMessage = delayReason
+            ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`
+            : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
+        queueAnnouncement(delayMessage);
+    }
                         });
                     }
                 });
