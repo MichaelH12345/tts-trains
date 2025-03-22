@@ -80,19 +80,63 @@
             setTimeout(() => {
                 isSpeaking = false;
                 document.getElementById("main-message").textContent = "";
-                setTimeout(processQueue, 2500);
-            }, 2500);
+                setTimeout(processQueue, 1000);
+            }, 500);
         }
+        
+let lastAnnouncedNRCC = false;
+let nrccCountdown = 120; // 2 minutes
+let nrccTimerInterval;
 
-        function fetchTrainData() {
-            const stationCode = getStationCode();
-            const apiUrl = `https://api.codetabs.com/v1/proxy/?quest=https://www.trainboard.uk/api/${stationCode}`;
+function updateNRCCCountdown() {
+    let minutes = Math.floor(nrccCountdown / 60);
+    let seconds = nrccCountdown % 60;
+    document.getElementById("nrcc-timer").textContent = `Next NRCC announcement in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-            fetch(apiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    let currentTime = new Date();
+    if (nrccCountdown > 0) {
+        nrccCountdown--;
+    } else {
+        lastAnnouncedNRCC = false; // Allow new NRCC announcement
+        nrccCountdown = 120; // Reset timer
+    }
+}
 
+function startNRCCCountdown() {
+    if (nrccTimerInterval) clearInterval(nrccTimerInterval); // Reset if already running
+    nrccCountdown = 120; // Reset timer to 2 minutes
+    nrccTimerInterval = setInterval(updateNRCCCountdown, 1000); // Update every second
+}
+
+function processNRCCMessages(nrccMessages) {
+    if (!nrccMessages || nrccMessages.length === 0) {
+        document.getElementById("nrcc-message").textContent = "No disruption messages";
+        return;
+    }
+
+    let cleanedMessages = nrccMessages.map(msg => {
+        return msg.Value.replace(/<a href=".*?">.*?<\/a>/g, "the status and disruptions page, at National Rail dot co dot UK.");
+    });
+
+    let fullMessage = cleanedMessages.join(" ");
+    document.getElementById("nrcc-message").textContent = fullMessage;
+
+    if (!lastAnnouncedNRCC) {
+        queueAnnouncement(fullMessage);
+        lastAnnouncedNRCC = true;
+        startNRCCCountdown(); // Start the countdown after announcing
+    }
+}
+
+function fetchTrainData() {
+    const stationCode = getStationCode();
+    const apiUrl = `https://api.codetabs.com/v1/proxy/?quest=https://www.trainboard.uk/api/${stationCode}`;
+
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.data && data.data.nrccMessages) {
+                processNRCCMessages(data.data.nrccMessages);
+            }
                     if (data.data && data.data.trainServices) {
                         data.data.trainServices.forEach(service => {
                             const std = service.std || "Unknown Time";
@@ -152,24 +196,34 @@
                                 queueAnnouncement(message);
                             }
 
-                            if (diffStdMinutes <= 1 && etd !== "On time") {
-                                const delayMinutes = Math.round(diffEtdMinutes - diffStdMinutes);
-                                let delayMessage = delayReason
-                                    ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`
-                                    : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
+if (diffStdMinutes <= 1 && etd !== "On time") {
+    let delayMessage = "";
 
-                                if (delayMinutes > 15) {
-                                    delayMessage += ` If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Visit ${operator}'s website for further information.`;
-                                }
+    if (isNaN(diffEtdMinutes)) { // Handle 'NaN' ETD values
+        delayMessage = `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed. ` +
+            (delayReason ? `This is due to ${delayReason}. ` : "") +
+            `Please listen for further announcements. If this delay results in you reaching your destination at least 15 minutes late, ` +
+            `you may be entitled to delay repay. Visit ${operator}'s website for further information.`;
+    } else {
+        const delayMinutes = Math.round(diffEtdMinutes - diffStdMinutes);
+        delayMessage = delayReason
+            ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`
+            : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
 
-                                queueAnnouncement(delayMessage);
-                            }
+        if (delayMinutes > 15) {
+            delayMessage += ` If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Visit ${operator}'s website for further information.`;
+        }
+    }
+
+    queueAnnouncement(delayMessage);
+}
                         });
                     }
                 });
         }
 
-        setInterval(fetchTrainData, 10000);
+setInterval(fetchTrainData, 10000);
+startNRCCCountdown(); // Start countdown when page loads
     </script>
 </body>
 </html>
