@@ -135,7 +135,7 @@
                             if (etd === "Cancelled") {
                                 const message = `Your attention please! The ${std}, ${operator} service, to ${destination}, has been cancelled. ` +
                                     (cancelReason ? `This is due to ${cancelReason}. ` : "") + 
-                                    `${operator} apologises for the disruption to your journey today. You may be entitled to delay repay. Check with your train operator for further information.`;
+                                    `${operator} apologises for the disruption to your journey today. You may be entitled to delay repay. Visit ${operator}'s website for further information.`;
                                 queueAnnouncement(message);
                                 return;
                             }
@@ -159,7 +159,7 @@
                                     : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
 
                                 if (delayMinutes > 15) {
-                                    delayMessage += ` If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Check with your train operator for further information.`;
+                                    delayMessage += ` If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Visit ${operator}'s website for further information.`;
                                 }
 
                                 queueAnnouncement(delayMessage);
