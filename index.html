@@ -114,7 +114,6 @@
                                     ? callingPoints.slice(0, -1).join(", ") + " , and " + callingPoints.slice(-1) 
                                     : "";
 
-
                             if (length !== "0") {
                                 callingPointsText += ` . This train is formed of ${length} coaches.`;
                             }
@@ -155,9 +154,14 @@
 
                             if (diffStdMinutes <= 1 && etd !== "On time") {
                                 const delayMinutes = Math.round(diffEtdMinutes - diffStdMinutes);
-                                const delayMessage = delayReason
-                                    ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you. If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Check with your train operator for further information.`
-                                    : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you. If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Check with your train operator for further information.`;
+                                let delayMessage = delayReason
+                                    ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`
+                                    : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
+
+                                if (delayMinutes > 15) {
+                                    delayMessage += ` If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Check with your train operator for further information.`;
+                                }
+
                                 queueAnnouncement(delayMessage);
                             }
                         });
