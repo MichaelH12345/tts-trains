@@ -151,9 +151,9 @@ function finishSpeaking() {
         if (nrccQueued) {
             playNRCCMessage(); // If an NRCC message was waiting, play it now
         } else {
-            setTimeout(processQueue, 2500);
+            setTimeout(processQueue, 100);
         }
-    }, 2500);
+    }, 100);
 }
 
 function fetchTrainData() {
