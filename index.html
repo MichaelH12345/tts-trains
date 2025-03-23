@@ -249,8 +249,8 @@ if (diffStdMinutes <= 1 && etd !== "On time") {
 
         if (delayMinutes > 30) {
             delayMessage += ` Customers are advised that they may be entitled to compensation for this disruption today.`;
-        } else if (delayMinutes > 10) {
-            delayMessage += ` You may be entitled to delay repay. Check with your train operator for further information.`;
+        } else if (delayMinutes > 60) {
+            delayMessage += `Customers are advised that they may be able to recieve a full or partial refund of their fare, because of this disruption today.`;
         }
     }
 queueAnnouncement(delayMessage);
