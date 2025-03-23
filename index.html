@@ -228,27 +228,31 @@ function fetchTrainData() {
                                     : `Platform ${platform}, for the delayed ${std}, ${operator} service, to ${destination}. Calling at ${callingPointsText}.`;
                                 queueAnnouncement(message);
                             }
-
 if (diffStdMinutes <= 1 && etd !== "On time") {
     let delayMessage = "";
 
-if (isNaN(diffEtdMinutes)) { // Handle 'NaN' ETD values
-    delayMessage = `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed. ` +
-        (delayReason ? `This is due to ${delayReason}. ` : "") +
-        `Please listen for further announcements. If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay.`;
-} else {
-    const delayMinutes = Math.round(diffEtdMinutes - diffStdMinutes);
-    delayMessage = delayReason
-        ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`
-        : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
+    if (isNaN(diffEtdMinutes)) { // Handle 'NaN' ETD values
+        delayMessage = `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed. ` +
+            (delayReason ? `This is due to ${delayReason}. ` : "The reason for the delay is currently being investigated by our team. ") +
+            `Please listen for further announcements. If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay.`;
+    } else {
+        const delayMinutes = Math.round(diffEtdMinutes - diffStdMinutes);
+        delayMessage = `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. `;
 
-    if (delayMinutes > 30) {
-        delayMessage += ` Customers are advised that they may be entitled to compensation for this disruption today.`;
-    } else if (delayMinutes > 15) {
-        delayMessage += ` If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Check with your train operator for further information.`;
+        if (delayReason) {
+            delayMessage += `This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`;
+        } else if (delayMinutes > 10) {
+            delayMessage += `The reason for the delay is currently being investigated by our team. We apologise for this late running, and the inconvenience this may cause you.`;
+        } else {
+            delayMessage += `We apologise for this late running, and the inconvenience this may cause you.`;
+        }
+
+        if (delayMinutes > 30) {
+            delayMessage += ` Customers are advised that they may be entitled to compensation for this disruption today.`;
+        } else if (delayMinutes > 10) {
+            delayMessage += ` You may be entitled to delay repay. Check with your train operator for further information.`;
+        }
     }
-}
-
 queueAnnouncement(delayMessage);
 
 }
