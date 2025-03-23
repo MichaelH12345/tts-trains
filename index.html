@@ -42,7 +42,7 @@
         let lastAnnouncedServices = {};
         let announcementQueue = [];
         let isSpeaking = false;
-        let nrccInterval = 30; // 120 seconds countdown for NRCC
+        let nrccInterval = 120; // 120 seconds countdown for NRCC
 
         function updateNRCCCountdown() {
             let minutes = Math.floor(nrccInterval / 60);
@@ -214,7 +214,7 @@ if (data.data && data.data.nrccMessages && data.data.nrccMessages.length > 0) {
         }
 
         setInterval(fetchTrainData, 30000);
-        setInterval(announceNRCCMessage, 30000); // Every 2 minutes
+        setInterval(announceNRCCMessage, 120000); // Every 2 minutes
                 setInterval(updateNRCCCountdown, 1000);
 
     </script>
