@@ -242,9 +242,9 @@ if (isNaN(diffEtdMinutes)) { // Handle 'NaN' ETD values
         ? `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. This is due to ${delayReason}. We apologise for this late running, and the inconvenience this may cause you.`
         : `We are sorry that the ${std}, ${operator} service, to ${destination}, is delayed by approximately ${delayMinutes} minutes. We apologise for this late running, and the inconvenience this may cause you.`;
 
-    if (delayMinutes > 15) {
+    if (delayMinutes > 30) {
         delayMessage += ` Customers are advised that they may be entitled to compensation for this disruption today.`;
-    } else if (delayMinutes > 1) {
+    } else if (delayMinutes > 15) {
         delayMessage += ` If this delay results in you reaching your destination at least 15 minutes late, you may be entitled to delay repay. Check with your train operator for further information.`;
     }
 }
