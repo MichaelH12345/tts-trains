@@ -212,7 +212,7 @@ function fetchTrainData() {
                             if (etd === "Cancelled") {
                                 const message = `Your attention please! The ${std}, ${operator} service, to ${destination}, has been cancelled. ` +
                                     (cancelReason ? `This is due to ${cancelReason}. ` : "") + 
-                                    `${operator} apologises for the disruption to your journey today. You may be entitled to delay repay. Visit ${operator}'s website for further information.`;
+                                    `${operator} apologises for the disruption to your journey today. Customers are advised that they may be entitled to compensation for this disruption today.`;
                                 queueAnnouncement(message);
                                 return;
                             }
